@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sistema Gordotón</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- SheetJS para lectura de Excel en HU-06 -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    /* ── Estilos HU-06 Carga masiva ────────────────────────── */
+    .upload-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .left-col { display: flex; flex-direction: column; gap: 12px; }
+    .upload-zone {
+      border: 1.5px dashed var(--border-strong);
+      border-radius: 12px;
+      padding: 0 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 140px;
+    }
+    .upload-zone:hover { background: var(--surface-2); border-color: var(--border-accent); }
+    .upload-icon  { font-size: 36px; color: var(--text-muted); margin-bottom: 10px; }
+    .upload-title { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
+    .upload-sub   { font-size: 11px; color: var(--text-muted); line-height: 1.6; }
+    .info-row {
+      display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+      margin-top: 12px; padding-top: 12px;
+      border-top: 0.5px solid var(--border);
+      font-size: 12px; color: var(--text-secondary);
+    }
+    .estado-chip { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot-run { background: var(--text-accent); animation: pulse 1s infinite; }
+    .dot-ok  { background: var(--text-success); }
+    .dot-err { background: var(--text-danger); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .progress-bar-wrap { background: var(--surface-1); border-radius: 4px; height: 8px; overflow: hidden; margin: 8px 0 4px; }
+    .progress-bar      { height: 100%; border-radius: 4px; transition: width .4s ease; }
+    .progress-info     { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
+    .log-box {
+      background: var(--surface-1); border-radius: var(--radius);
+      border: 0.5px solid var(--border);
+      padding: 10px 12px; height: 180px; overflow-y: auto;
+      font-family: var(--font-mono); font-size: 11px; line-height: 1.8;
+    }
+    .log-ok   { color: var(--text-success); }
+    .log-err  { color: var(--text-danger); }
+    .log-info { color: var(--text-secondary); }
+    .log-done { color: var(--text-success); font-weight: 500; }
+    .btn-link-inline {
+      background: none; border: none; color: var(--text-accent);
+      font-size: 13px; cursor: pointer; padding: 0; text-decoration: underline;
+    }
+    .btn-link {
+      background: none; border: 0.5px solid var(--border);
+      border-radius: var(--radius); color: var(--text-accent);
+      font-size: 13px; cursor: pointer; padding: 8px 12px;
+      display: flex; align-items: center; gap: 6px;
+      width: 100%; box-sizing: border-box;
+    }
+    @media (max-width: 500px) { .upload-layout { grid-template-columns: 1fr; } }
+
+    /* Padding consistente con las demás páginas */
+    #page-carga-masiva,
+    #page-dashboard,
+    #page-ranking {
+      padding: 24px !important;
+      max-width: 1100px !important;
+      margin: 0 auto !important;
+      box-sizing: border-box;
+    }
+    @media (max-width: 600px) {
+      #page-carga-masiva,
+      #page-dashboard,
+      #page-ranking { padding: 16px !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     TOPBAR
+══════════════════════════════════════ -->
+<header class="topbar">
+  <div class="topbar-brand">🏆 Sistema Gordotón</div>
+  <nav class="topbar-nav">
+    <button class="nav-btn active"  data-page="gordotones">Gordotones</button>
+    <button class="nav-btn"         data-page="dashboard">Dashboard</button>
+    <button class="nav-btn"         data-page="ranking">Ranking</button>
+    <button class="nav-btn"         data-page="carga-masiva">Carga masiva</button>
+  </nav>
+</header>
+
+<!-- ══════════════════════════════════════
+     PAGE: GORDOTONES (HU-01)
+══════════════════════════════════════ -->
+<main id="page-gordotones" class="page active">
+  <div class="page-header">
+    <h1>Gordotones</h1>
+    <button class="btn-primary" onclick="UI.abrirModalCrear()">+ Nuevo gordotón</button>
+  </div>
+  <div class="metrics-row" id="metrics-gordotones"></div>
+  <div class="card">
+    <div class="table-wrap">
+      <table id="tabla-gordotones">
+        <thead>
+          <tr>
+            <th>Nombre</th><th>Fecha inicio</th><th>Fecha fin</th>
+            <th>Estado</th><th>Participantes</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-gordotones">
+          <tr><td colspan="6" class="loading-cell">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- ══════════════════════════════════════
+     PAGE: DASHBOARD (HU-04)
+══════════════════════════════════════ -->
+<main id="page-dashboard" class="page">
+  <div class="page-header"><h1>Dashboard de avance</h1></div>
+  <div class="card filter-card">
+    <div class="filter-row">
+      <div class="field-wrap">
+        <label>Gordotón</label>
+        <select id="dash-gordoton" onchange="Dashboard.onGordotonChange()">
+          <option value="">— Selecciona un gordotón —</option>
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label>Participante</label>
+        <select id="dash-participante" onchange="Dashboard.cargar()" disabled>
+          <option value="">— Selecciona un participante —</option>
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label>Desde</label>
+        <input type="date" id="dash-desde" onchange="Dashboard.cargar()"/>
+      </div>
+      <div class="field-wrap">
+        <label>Hasta</label>
+        <input type="date" id="dash-hasta" onchange="Dashboard.cargar()"/>
+      </div>
+    </div>
+  </div>
+  <div id="dash-empty" class="empty-state">
+    <div class="empty-icon">📊</div>
+    <p class="empty-title">Sin actualizaciones</p>
+    <p class="empty-sub" id="dash-empty-msg">Selecciona un gordotón y un participante para ver su avance.</p>
+  </div>
+  <div id="dash-content" style="display:none">
+    <div class="metrics-row" id="dash-metrics"></div>
+    <div class="charts-grid">
+      <div class="card chart-card">
+        <p class="chart-label">Peso (kg) en el tiempo</p>
+        <canvas id="chart-peso"></canvas>
+      </div>
+      <div class="card chart-card">
+        <p class="chart-label">% Grasa y masa muscular</p>
+        <canvas id="chart-comp"></canvas>
+      </div>
+      <div class="card chart-card chart-full">
+        <p class="chart-label">Scores de progreso (grasa · músculo · recomposición)</p>
+        <canvas id="chart-scores"></canvas>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ══════════════════════════════════════
+     PAGE: RANKING (HU-05)
+══════════════════════════════════════ -->
+<main id="page-ranking" class="page">
+  <div class="page-header"><h1>Ranking</h1></div>
+  <div class="card filter-card">
+    <div class="filter-row">
+      <div class="field-wrap">
+        <label>Gordotón</label>
+        <select id="rank-gordoton" onchange="Ranking.cargar()">
+          <option value="">— Selecciona un gordotón —</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div id="rank-empty" class="empty-state">
+    <div class="empty-icon">🏅</div>
+    <p class="empty-title">Selecciona un gordotón</p>
+    <p class="empty-sub">El ranking aparecerá aquí una vez seleccionado.</p>
+  </div>
+  <div id="rank-content" style="display:none">
+    <div class="rank-tabs">
+      <button class="rank-tab active" data-cat="perdidaGrasa"           onclick="Ranking.switchTab(this)">🔥 Pérdida de grasa</button>
+      <button class="rank-tab"        data-cat="gananciaMusculo"         onclick="Ranking.switchTab(this)">💪 Ganancia muscular</button>
+      <button class="rank-tab"        data-cat="recomposicionCorporal"   onclick="Ranking.switchTab(this)">🏆 Recomposición corporal</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table id="tabla-ranking">
+          <thead id="rank-thead"></thead>
+          <tbody id="rank-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ══════════════════════════════════════
+     PAGE: CARGA MASIVA (HU-06)
+══════════════════════════════════════ -->
+<main id="page-carga-masiva" class="page">
+  <div class="page-header">
+    <h1>Carga masiva de actualizaciones</h1>
+  </div>
+
+  <div class="card filter-card">
+    <!-- Fila principal: selector + botones alineados horizontalmente -->
+    <div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+
+      <div class="field-wrap" style="flex:1; min-width:200px; max-width:320px;">
+        <label>Gordotón</label>
+        <select id="cm-gordoton" onchange="CargaMasiva.onGordotonChange()">
+          <option value="">— Selecciona un gordotón —</option>
+        </select>
+      </div>
+
+      <button class="btn-primary" id="cm-btn-subir" style="height:38px; white-space:nowrap;"
+        onclick="document.getElementById('cm-file-input').click()">
+        <i class="ti ti-upload" aria-hidden="true"></i>
+        Subir archivo Excel
+      </button>
+
+      <input type="file" id="cm-file-input" accept=".xlsx,.xls"
+        style="display:none" onchange="CargaMasiva.onFileSelected(this)"/>
+
+      <button onclick="CargaMasiva.descargarPlantilla()"
+        style="height:38px; background:none; border:0.5px solid var(--border-strong);
+               border-radius:var(--radius); padding:0 14px; font-size:13px;
+               color:var(--text-accent); cursor:pointer; display:flex;
+               align-items:center; gap:6px; white-space:nowrap;">
+        <i class="ti ti-download" aria-hidden="true"></i>
+        Descargar plantilla
+      </button>
+
+    </div>
+
+    <!-- Fila de columnas requeridas -->
+    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;
+                margin-top:14px; padding-top:12px; border-top:0.5px solid var(--border);
+                font-size:12px; color:var(--text-secondary);">
+      <i class="ti ti-info-circle" aria-hidden="true"></i>
+      <span>Columnas requeridas:</span>
+      <span class="badge badge-info">Participante</span>
+      <span class="badge badge-info">Peso Actual</span>
+      <span class="badge badge-info">Grasa Actual</span>
+      <span class="badge badge-info">Músculo Actual</span>
+      <span style="color:var(--text-muted); margin:0 4px;">·</span>
+      <span style="font-size:11px; color:var(--text-muted);">Opcionales:</span>
+      <span class="badge" style="background:var(--surface-2); color:var(--text-secondary); border:0.5px solid var(--border);">Fecha</span>
+      <span class="badge" style="background:var(--surface-2); color:var(--text-secondary); border:0.5px solid var(--border);">Descripcion</span>
+    </div>
+  </div>
+
+  <!-- Historial de cargas -->
+  <div class="card">
+    <div style="padding:12px 20px 8px; font-size:11px; color:var(--text-muted);
+                font-weight:500; text-transform:uppercase; letter-spacing:.04em;
+                border-bottom:0.5px solid var(--border);">
+      Historial de cargas
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Archivo</th>
+            <th>Fecha</th>
+            <th>Filas</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="cm-historial-body">
+          <tr><td colspan="5" class="loading-cell">Selecciona un gordotón para ver el historial</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal de progreso -->
+  <div id="cm-modal" class="modal-backdrop" style="display:none"
+    onclick="event.target===this && CargaMasiva.cerrarModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">Progreso de carga</span>
+        <div id="cm-estado-chip" class="estado-chip">
+          <div id="cm-estado-dot" class="dot dot-run"></div>
+          <span id="cm-estado-texto" style="color:var(--text-accent)">Procesando...</span>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">
+          <strong id="cm-modal-archivo" style="color:var(--text-primary)">—</strong>
+        </div>
+        <div class="progress-bar-wrap">
+          <div id="cm-progress-bar" class="progress-bar" style="width:0%; background:var(--fill-accent)"></div>
+        </div>
+        <div class="progress-info">
+          <span id="cm-progress-filas">0 / 0 filas</span>
+          <span id="cm-progress-pct">0%</span>
+        </div>
+        <div style="margin:12px 0 6px; font-size:11px; color:var(--text-muted); font-weight:500; text-transform:uppercase; letter-spacing:.04em;">Log en tiempo real</div>
+        <div id="cm-log" class="log-box"></div>
+      </div>
+      <div class="modal-footer">
+        <span style="font-size:12px; color:var(--text-muted)">Permanece abierto hasta cerrarlo manualmente</span>
+        <button id="cm-btn-cerrar" class="btn-ghost" onclick="CargaMasiva.cerrarModal()" disabled>Cerrar</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ══════════════════════════════════════
+     MODAL: CREAR GORDOTON
+══════════════════════════════════════ -->
+<div id="modal-crear" class="modal-backdrop" style="display:none" onclick="UI.cerrarModal('modal-crear')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">Nuevo gordotón</span>
+      <button class="modal-close" onclick="UI.cerrarModal('modal-crear')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-wrap">
+        <label>Nombre *</label>
+        <input type="text" id="crear-nombre" placeholder="Ej. Gordotón Verano 2025"/>
+        <span class="field-hint">Debe ser único en el sistema</span>
+      </div>
+      <div class="field-wrap">
+        <label>Descripción</label>
+        <textarea id="crear-descripcion" rows="3" placeholder="Descripción del evento..."></textarea>
+      </div>
+      <div class="dates-row">
+        <div class="field-wrap">
+          <label>Fecha inicio *</label>
+          <input type="date" id="crear-inicio"/>
+        </div>
+        <div class="field-wrap">
+          <label>Fecha fin *</label>
+          <input type="date" id="crear-fin"/>
+        </div>
+      </div>
+      <div class="field-wrap">
+        <label>Estado inicial</label>
+        <input type="text" value="Activo" disabled/>
+      </div>
+      <div id="crear-error" class="msg-error" style="display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="UI.cerrarModal('modal-crear')">Cancelar</button>
+      <button class="btn-primary" onclick="Gordotones.crear()">Crear gordotón</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast" style="display:none"></div>
+
+<script src="js/app.js"></script>
+<script src="js/cargaMasiva.js"></script>
+</body>
+</html>

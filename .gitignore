@@ -1,0 +1,23 @@
+# Variables de entorno — NUNCA subir a Git
+.env
+.env.local
+.env.production
+.env.*
+
+# Dependencias
+node_modules/
+npm-debug.log*
+
+# Logs
+logs/
+*.log
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Carpetas configuradas para el proyecto
+uploads/
+tmp/
+pruebas/
+scripts/

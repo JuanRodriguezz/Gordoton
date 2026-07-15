@@ -1,0 +1,207 @@
+<!-- ══════════════════════════════════════
+     PANTALLA: CARGA MASIVA (HU-06)
+     Agregar como nueva pestaña en index.html
+     dentro del topbar-nav y como nuevo <main>
+══════════════════════════════════════ -->
+
+<!-- 1. Agregar este botón en el topbar-nav de index.html -->
+<!-- <button class="nav-btn" data-page="carga-masiva">Carga masiva</button> -->
+
+<!-- 2. Agregar esta página como nuevo <main> en index.html -->
+<main id="page-carga-masiva" class="page">
+  <div class="page-header">
+    <h1>Carga masiva de actualizaciones</h1>
+  </div>
+
+  <!-- Tarjeta principal: layout 2 columnas -->
+  <div class="card">
+    <div class="card-body">
+      <div class="upload-layout">
+
+        <!-- Columna izquierda: gordotón + subir + plantilla -->
+        <div class="left-col">
+          <div class="field-wrap">
+            <label>Gordotón</label>
+            <select id="cm-gordoton" onchange="CargaMasiva.onGordotonChange()">
+              <option value="">— Selecciona un gordotón —</option>
+            </select>
+          </div>
+
+          <button class="btn-primary" id="cm-btn-subir"
+            onclick="document.getElementById('cm-file-input').click()">
+            <i class="ti ti-upload" aria-hidden="true"></i>
+            Subir archivo Excel
+          </button>
+
+          <!-- Input oculto — CA-01: solo .xlsx y .xls -->
+          <input type="file" id="cm-file-input" accept=".xlsx,.xls"
+            style="display:none"
+            onchange="CargaMasiva.onFileSelected(this)"/>
+
+          <button class="btn-link" onclick="CargaMasiva.descargarPlantilla()">
+            <i class="ti ti-download" aria-hidden="true"></i>
+            Descargar plantilla
+          </button>
+        </div>
+
+        <!-- Columna derecha: zona de arrastre -->
+        <div class="upload-zone" id="cm-upload-zone"
+          onclick="document.getElementById('cm-file-input').click()">
+          <i class="ti ti-file-spreadsheet upload-icon" aria-hidden="true"></i>
+          <div class="upload-title">Arrastra tu archivo aquí</div>
+          <div class="upload-sub">
+            o haz clic para seleccionar<br>
+            Solo .xlsx o .xls · máx. 5 MB · máx. 500 filas
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Columnas requeridas -->
+      <div class="info-row">
+        <i class="ti ti-info-circle" aria-hidden="true"></i>
+        <span>Columnas requeridas (orden libre):</span>
+        <span class="badge badge-info">Participante</span>
+        <span class="badge badge-info">Peso Actual</span>
+        <span class="badge badge-info">Grasa Actual</span>
+        <span class="badge badge-info">Músculo Actual</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historial de cargas -->
+  <div class="card">
+    <div style="padding:12px 20px 0; font-size:11px; color:var(--text-muted);
+      font-weight:500; text-transform:uppercase; letter-spacing:.04em;">
+      Historial de cargas
+    </div>
+    <div class="table-wrap">
+      <table class="rank-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>Archivo</th>
+            <th>Fecha</th>
+            <th>Filas</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="cm-historial-body">
+          <tr><td colspan="5" class="loading-cell">Selecciona un gordotón para ver el historial</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       MODAL DE PROGRESO (CA-03, CA-04, CA-06)
+  ══════════════════════════════════════ -->
+  <div id="cm-modal" class="modal-backdrop" style="display:none"
+    onclick="event.target===this && CargaMasiva.cerrarModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+
+      <div class="modal-header">
+        <span class="modal-title">Progreso de carga</span>
+        <div id="cm-estado-chip" class="estado-chip">
+          <div id="cm-estado-dot" class="dot dot-run"></div>
+          <span id="cm-estado-texto" style="color:var(--text-accent)">Procesando...</span>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <!-- Nombre del archivo (CA-04) -->
+        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">
+          <strong id="cm-modal-archivo" style="color:var(--text-primary)">—</strong>
+        </div>
+
+        <!-- Barra de progreso (CA-04) -->
+        <div class="progress-bar-wrap">
+          <div id="cm-progress-bar" class="progress-bar"
+            style="width:0%; background:var(--fill-accent)"></div>
+        </div>
+        <div class="progress-info">
+          <span id="cm-progress-filas">0 / 0 filas</span>
+          <span id="cm-progress-pct">0%</span>
+        </div>
+
+        <!-- Log en tiempo real (CA-04, CA-05) -->
+        <div style="margin:12px 0 6px; font-size:11px; color:var(--text-muted);
+          font-weight:500; text-transform:uppercase; letter-spacing:.04em;">
+          Log en tiempo real
+        </div>
+        <div id="cm-log" class="log-box"></div>
+      </div>
+
+      <div class="modal-footer">
+        <span style="font-size:12px; color:var(--text-muted)">
+          Permanece abierto hasta cerrarlo manualmente (CA-06)
+        </span>
+        <button id="cm-btn-cerrar" class="btn-ghost"
+          onclick="CargaMasiva.cerrarModal()" disabled>
+          Cerrar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<!-- 3. Agregar estos estilos al final de styles.css o en un bloque <style> -->
+<style>
+/* Layout 2 columnas para la tarjeta de carga */
+.upload-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+.left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.upload-zone {
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 12px;
+  padding: 0 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+}
+.upload-zone:hover { background: var(--surface-2); border-color: var(--border-accent); }
+.upload-icon  { font-size: 36px; color: var(--text-muted); margin-bottom: 10px; }
+.upload-title { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
+.upload-sub   { font-size: 11px; color: var(--text-muted); line-height: 1.6; }
+.info-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:12px;
+  padding-top:12px; border-top:0.5px solid var(--border); font-size:12px; color:var(--text-secondary); }
+/* Modal estilos adicionales */
+.estado-chip { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:500; }
+.dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.dot-run { background:var(--text-accent); animation:pulse 1s infinite; }
+.dot-ok  { background:var(--text-success); }
+.dot-err { background:var(--text-danger); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.progress-bar-wrap { background:var(--surface-1); border-radius:4px; height:8px; overflow:hidden; margin:8px 0 4px; }
+.progress-bar { height:100%; border-radius:4px; transition:width .4s ease; }
+.progress-info { display:flex; justify-content:space-between; font-size:12px; color:var(--text-secondary); }
+.log-box { background:var(--surface-1); border-radius:var(--radius); border:0.5px solid var(--border);
+  padding:10px 12px; height:180px; overflow-y:auto; font-family:var(--font-mono); font-size:11px; line-height:1.8; }
+.log-ok   { color:var(--text-success); }
+.log-err  { color:var(--text-danger); }
+.log-info { color:var(--text-secondary); }
+.log-done { color:var(--text-success); font-weight:500; }
+.btn-link-inline { background:none; border:none; color:var(--text-accent); font-size:13px; cursor:pointer; padding:0; text-decoration:underline; }
+.btn-link { background:none; border:0.5px solid var(--border); border-radius:var(--radius); color:var(--text-accent);
+  font-size:13px; cursor:pointer; padding:8px 12px; display:flex; align-items:center; gap:6px; width:100%; box-sizing:border-box; }
+@media (max-width:500px) { .upload-layout { grid-template-columns: 1fr; } }
+</style>
+
+<!-- 4. Agregar en index.html antes de </body> (SheetJS debe ir antes de cargaMasiva.js) -->
+<!-- <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script> -->
+<!-- <script src="js/cargaMasiva.js"></script> -->
