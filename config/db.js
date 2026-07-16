@@ -17,7 +17,7 @@ if (require('fs').existsSync(envPath)) {
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/gordoton';
 
 console.log('MONGO_URI en Railway:', process.env.MONGO_URI ? 'ENCONTRADA' : 'NO ENCONTRADA');
-console.log('Todas las variables:', Object.keys(process.env).filter(k => k.includes('MONGO')));
+console.log('Todas las variables:', Object.keys(process.env));
 
 const connectDB = async () => {
   try {
