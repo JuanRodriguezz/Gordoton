@@ -15,6 +15,7 @@ const actualizacionRoutes    = require('./routes/actualizacionRoutes');
 const dashboardRoutes        = require('./routes/dashboardRoutes');
 const rankingRoutes          = require('./routes/rankingRoutes');
 const cargaMasivaRoutes      = require('./routes/cargaMasivaRoutes');
+const adminRoutes            = require('./routes/adminRoutes')
 const notFound               = require('./middlewares/notFound');
 const errorHandler           = require('./middlewares/errorHandler');
 
@@ -47,6 +48,7 @@ app.use('/api/actualizaciones', actualizacionRoutes);
 app.use('/api/dashboard',     dashboardRoutes);
 app.use('/api/ranking',       rankingRoutes);
 app.use('/api/carga-masiva',  cargaMasivaRoutes);  // HU-06
+app.use('/api/admin', adminRoutes);
 
 // Frontend fallback SPA
 app.get('*', (req, res) => {
