@@ -40,7 +40,7 @@ router.get('/recalcular/:participanteId', async (req, res) => {
     for (const act of actualizaciones) {
       const scoreGrasa   = Math.round(((participante.grasaInicial   - act.grasa)  / participante.grasaInicial)   * 100);
       const scoreMusculo = Math.round(((act.musculo - participante.musculoInicial) / participante.musculoInicial) * 100);
-      const scoreRecomp  = scoreGrasa + scoreMusculo;
+      const scoreRecomp  = scoreGrasa + scoreMusculo / 2;
  
       await Actualizacion.findByIdAndUpdate(act._id, {
         scoreGrasa, scoreMusculo, scoreRecomp
